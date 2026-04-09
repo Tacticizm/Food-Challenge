@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tact's Idle Feast: Live Stats</title>
+    <title>Tact's Idle Feast: SUGAR RUSH</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { background-color: #1a1a1a; color: #eee; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 5px; overflow: hidden; }
-        .game-container { background: #2d2d2d; padding: 12px; border-radius: 15px; width: 400px; text-align: center; border: 4px solid #444; display: flex; flex-direction: column; gap: 6px; position: relative; }
+        body { background-color: #1a1a1a; color: #eee; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 5px; overflow: hidden; transition: background-color 0.3s; }
+        .game-container { background: #2d2d2d; padding: 12px; border-radius: 15px; width: 400px; text-align: center; border: 4px solid #444; display: flex; flex-direction: column; gap: 6px; position: relative; transition: 0.3s; }
         
-        /* ALERTS & MODALS */
-        #alert-popup { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #ff0000; color: white; padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; border: 2px solid white; z-index: 1000; width: 80%; display: none; pointer-events: none; }
-        
-        #stats-modal { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); border-radius: 12px; z-index: 2000; 
-            display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
-        }
+        /* SUGAR RUSH OVERLAY EFFECTS */
+        .sugar-rush-active { background-color: #2b002b !important; }
+        .sugar-rush-active .game-container { border-color: #ff00ff !important; box-shadow: 0 0 20px #ff00ff; }
+        #rush-timer { display: none; color: #ff00ff; font-weight: bold; font-size: 0.9rem; animation: blink 0.5s infinite; margin-bottom: 4px; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
+        #alert-popup { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #ff0000; color: white; padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; border: 2px solid white; z-index: 1000; width: 80%; display: none; pointer-events: none; }
+        #stats-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); border-radius: 12px; z-index: 2000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; font-size: 0.7rem; margin-top: 10px; }
         .stat-box { background: #222; padding: 8px; border: 1px solid #444; border-radius: 6px; }
         .stat-box b { color: #00ffcc; display: block; font-size: 0.85rem; }
@@ -38,28 +37,33 @@
         .global-upgrades { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .global-upgrades button { padding: 8px; font-size: 0.65rem; background: #222; border-radius: 6px; cursor: pointer; font-family: inherit; font-weight: bold; transition: 0.3s; }
         
-        @keyframes glow { 0% { box-shadow: 0 0 2px currentColor; } 50% { box-shadow: 0 0 10px currentColor; } 100% { box-shadow: 0 0 2px currentColor; } }
-        .can-buy { animation: glow 1.5s infinite; border-color: #fff !important; }
+        @keyframes jawGlow { 0% { box-shadow: 0 0 2px #ffcc00; } 50% { box-shadow: 0 0 15px #ffcc00; } 100% { box-shadow: 0 0 2px #ffcc00; } }
+        @keyframes rbGlow { 0% { box-shadow: 0 0 2px #00bfff; } 50% { box-shadow: 0 0 15px #00bfff; } 100% { box-shadow: 0 0 2px #00bfff; } }
+        .can-buy-jaw { animation: jawGlow 1.5s infinite; border-color: #fff !important; }
+        .can-buy-rb { animation: rbGlow 1.5s infinite; border-color: #fff !important; }
         button:disabled { opacity: 0.3 !important; animation: none !important; cursor: default !important; }
 
         .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .food-card { background: #333; padding: 6px; border-radius: 10px; border: 1px solid #444; }
-        .food-header { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: bold; margin-bottom: 2px; align-items: center; }
-        .hp-bar { width: 100%; height: 50px; background: #000; border-radius: 6px; cursor: pointer; border: 1px solid #555; overflow: hidden; position: relative; }
-        .hp-fill { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 1; opacity: 0.7; pointer-events: none; }
-        .reward-overlay { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 5; pointer-events: none; font-size: 0.75rem; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .food-header { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: bold; margin-bottom: 2px; align-items: center; color: #aaa; }
+        
+        .hp-bar { width: 100%; height: 55px; background: #000; border-radius: 6px; cursor: pointer; border: 1px solid #555; overflow: hidden; position: relative; }
+        .hp-fill { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 1; opacity: 0.85; transition: width 0.1s linear; }
+        .reward-overlay { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; pointer-events: none; }
+        .reward-val { font-size: 0.85rem; font-weight: bold; text-shadow: 2px 2px 3px #000; color: #fff; }
+        .hp-num { font-size: 0.55rem; color: #fff; opacity: 0.9; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+
         .dish-up-btn { padding: 4px; font-size: 0.55rem; background: #222; color: #0f0; border: 1px solid #0f0; border-radius: 4px; width: 100%; margin-top: 4px; cursor: pointer; }
-
         .footer-btn { padding: 6px; background: #444; color: #fff; border: none; border-radius: 4px; font-size: 0.6rem; cursor: pointer; font-family: inherit; margin-top: 2px; }
-
         .floating-emoji { position: fixed; bottom: -50px; font-size: 2rem; pointer-events: none; z-index: 9999; animation: floatUp 2.5s linear forwards; }
         @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
     </style>
 </head>
-<body>
+<body id="game-body">
 
 <div class="game-container">
     <div id="alert-popup">⚠️ NEED MORE CALORIES!</div>
+    <div id="rush-timer">🍭 SUGAR RUSH: <span id="rush-sec">10</span>s (5x POWER!)</div>
 
     <div id="stats-modal">
         <h2 style="color:#00ffcc; margin:0 0 10px 0; font-size: 1.2rem;">📊 LIVE STATS</h2>
@@ -87,17 +91,16 @@
     </div>
 
     <div class="auto-panel">
-        <button id="auto-jaw-btn" class="auto-btn" onclick="handleAutoJaw()">HIRE JAW COACH</button>
-        <button id="auto-food-btn" class="auto-btn" onclick="handleAutoFood()">HIRE DISH MANAGERS</button>
+        <button id="auto-jaw-btn" class="auto-btn" onclick="handleAutoJaw()">HIRE COACH<br><span>Auto-buys Jaw Power</span></button>
+        <button id="auto-food-btn" class="auto-btn" onclick="handleAutoFood()">HIRE MGRS<br><span>Levels up dishes</span></button>
     </div>
 
     <div class="global-upgrades">
-        <button id="jaw-btn" style="color:#ffcc00; border-color:#ffcc00;" onclick="buyGlobalJaw(true)">TRAIN JAW (+<span id="jaw-gain">5</span>)<br>Cost: <span id="g-jaw-cost">50</span></button>
+        <button id="jaw-btn" style="color:#ffcc00; border-color:#ffcc00;" onclick="buyGlobalJaw(true)">TRAIN JAW (+5)<br>Cost: <span id="g-jaw-cost">50</span></button>
         <button id="rb-btn" style="color:#00bfff; border-color:#00bfff;" onclick="buyGlobalSpeed(true)">REDBULL (-0.1s)<br>Cost: <span id="g-speed-cost">500</span></button>
     </div>
 
     <div class="food-grid" id="food-container"></div>
-    
     <button class="footer-btn" onclick="toggleStats()">📊 VIEW PROGRESS STATS</button>
 </div>
 
@@ -106,40 +109,48 @@
         let calories = 0, globalPower = 5, globalInterval = 1000;
         let gJawCost = 50, gSpeedCost = 500;
         let playerLvl = 1, currentXP = 0, nextXP = 100;
-        
-        let hasCoach = false, coachActive = false;
-        let hasManagers = false, managersActive = false;
-        let coachPrice = 5000, managersPrice = 10000;
+        let hasCoach = false, coachActive = false, hasManagers = false, managersActive = false;
         let statsOpen = false;
-
-        let stats = {
-            lifetimeCals: 0,
-            manualTaps: 0,
-            autoBites: 0,
-            levelUps: 0,
-            dishCounts: [0, 0, 0, 0]
-        };
+        let stats = { lifetimeCals: 0, manualTaps: 0, autoBites: 0, levelUps: 0, dishCounts: [0, 0, 0, 0] };
+        
+        // SUGAR RUSH VARIABLES
+        let rushActive = false, rushTimeLeft = 0;
 
         const menu = [
-            { id: 0, n: "EGGS", i: "🍳", hp: 50, max: 50, r: 25, xp: 15, c: "#ffec8b", lvl: 1, cost: 20 },
-            { id: 1, n: "SAUSAGE", i: "🌭", hp: 250, max: 250, r: 120, xp: 50, c: "#a0522d", lvl: 1, cost: 100 },
-            { id: 2, n: "STEAK", i: "🥩", hp: 1500, max: 1500, r: 800, xp: 300, c: "#800000", lvl: 1, cost: 500 },
-            { id: 3, n: "SEAFOOD", i: "🦀", hp: 6000, max: 6000, r: 4000, xp: 1500, c: "#ff4500", lvl: 1, cost: 2000 }
+            { id: 0, n: "EGGS", i: "🍳", hp: 50, max: 50, r: 25, xp: 15, grad: "linear-gradient(90deg, #ffd700, #ffec8b)", lvl: 1, cost: 20 },
+            { id: 1, n: "SAUSAGE", i: "🌭", hp: 250, max: 250, r: 120, xp: 50, grad: "linear-gradient(90deg, #8b4513, #a0522d)", lvl: 1, cost: 100 },
+            { id: 2, n: "STEAK", i: "🥩", hp: 1500, max: 1500, r: 800, xp: 300, grad: "linear-gradient(90deg, #4d0000, #800000)", lvl: 1, cost: 500 },
+            { id: 3, n: "SEAFOOD", i: "🦀", hp: 6000, max: 6000, r: 4000, xp: 1500, grad: "linear-gradient(90deg, #ff0000, #ff4500)", lvl: 1, cost: 2000 }
         ];
+
+        function triggerSugarRush() {
+            if (rushActive) return; // Don't stack if already active
+            rushActive = true;
+            rushTimeLeft = 10;
+            document.getElementById('game-body').classList.add('sugar-rush-active');
+            document.getElementById('rush-timer').style.display = 'block';
+            
+            let rushInterval = setInterval(() => {
+                rushTimeLeft--;
+                document.getElementById('rush-sec').innerText = rushTimeLeft;
+                if (rushTimeLeft <= 0) {
+                    clearInterval(rushInterval);
+                    rushActive = false;
+                    document.getElementById('game-body').classList.remove('sugar-rush-active');
+                    document.getElementById('rush-timer').style.display = 'none';
+                }
+            }, 1000);
+        }
 
         window.toggleStats = () => {
             const modal = document.getElementById('stats-modal');
-            statsOpen = !statsOpen;
-            modal.style.display = statsOpen ? 'flex' : 'none';
+            statsOpen = !statsOpen; modal.style.display = statsOpen ? 'flex' : 'none';
             if (statsOpen) {
-                // Initial creation of dish boxes if they don't exist
                 const container = document.getElementById('dish-stats-container');
                 if (container.children.length === 0) {
                     menu.forEach((item, i) => {
                         const box = document.createElement('div');
-                        box.className = 'stat-box';
-                        box.id = `dish-stat-${i}`;
-                        container.appendChild(box);
+                        box.className = 'stat-box'; box.id = `dish-stat-${i}`; container.appendChild(box);
                     });
                 }
                 updateStatsUI();
@@ -152,7 +163,6 @@
             document.getElementById('stat-manual-taps').innerText = stats.manualTaps.toLocaleString();
             document.getElementById('stat-auto-bites').innerText = stats.autoBites.toLocaleString();
             document.getElementById('stat-level-ups').innerText = stats.levelUps.toLocaleString();
-            
             menu.forEach((item, i) => {
                 const box = document.getElementById(`dish-stat-${i}`);
                 if (box) box.innerHTML = `${item.i} ${item.n}<b>${stats.dishCounts[i].toLocaleString()}</b>`;
@@ -162,25 +172,17 @@
         function createEmojiBurst(emoji) {
             for (let i = 0; i < 15; i++) {
                 setTimeout(() => {
-                    const el = document.createElement('div');
-                    el.className = 'floating-emoji';
-                    el.innerText = emoji;
-                    el.style.left = Math.random() * 100 + 'vw';
+                    const el = document.createElement('div'); el.className = 'floating-emoji';
+                    el.innerText = emoji; el.style.left = Math.random() * 100 + 'vw';
                     el.style.animationDuration = (Math.random() * 1 + 2) + 's';
-                    document.body.appendChild(el);
-                    setTimeout(() => el.remove(), 3000);
+                    document.body.appendChild(el); setTimeout(() => el.remove(), 3000);
                 }, i * 100);
             }
         }
 
-        function showAlert() { 
-            const p = document.getElementById('alert-popup'); p.style.display = 'block'; 
-            setTimeout(() => p.style.display = 'none', 1200); 
-        }
-
         function draw() {
             document.getElementById('total-calories').innerText = Math.floor(calories).toLocaleString();
-            document.getElementById('stat-power').innerText = globalPower.toLocaleString();
+            document.getElementById('stat-power').innerText = (rushActive ? globalPower * 5 : globalPower).toLocaleString();
             document.getElementById('stat-speed').innerText = (globalInterval / 1000).toFixed(1) + "s";
             document.getElementById('stat-multi').innerText = "x" + (1 + (playerLvl * 0.1)).toFixed(1);
             document.getElementById('g-jaw-cost').innerText = gJawCost.toLocaleString();
@@ -188,21 +190,19 @@
             document.getElementById('player-lvl').innerText = playerLvl;
             document.getElementById('xp-text').innerText = `${currentXP}/${nextXP} XP`;
             document.getElementById('xp-fill').style.width = (currentXP / nextXP * 100) + "%";
-            document.getElementById('jaw-gain').innerText = (globalPower >= 100 ? 10 : 5);
             
             const jB = document.getElementById('jaw-btn');
             jB.disabled = (calories < gJawCost);
-            jB.className = (!jB.disabled) ? 'can-buy' : '';
+            if(!jB.disabled) jB.classList.add('can-buy-jaw'); else jB.classList.remove('can-buy-jaw');
 
             const rB = document.getElementById('rb-btn');
             rB.disabled = (calories < gSpeedCost || globalInterval <= 100);
-            rB.className = (!rB.disabled && globalInterval > 100) ? 'can-buy' : '';
+            if(!rB.disabled && globalInterval > 100) rB.classList.add('can-buy-rb'); else rB.classList.remove('can-buy-rb');
 
             const ajB = document.getElementById('auto-jaw-btn');
             if(!hasCoach) {
-                ajB.disabled = (calories < coachPrice);
-                ajB.innerHTML = `HIRE COACH<br>Cost: 5k`;
-                ajB.className = (!ajB.disabled) ? 'auto-btn can-buy' : 'auto-btn';
+                ajB.disabled = (calories < 5000);
+                ajB.innerHTML = `HIRE COACH<br><span>Cost: 5k</span>`;
             } else {
                 ajB.innerHTML = coachActive ? "COACH: ON" : "COACH: OFF";
                 ajB.className = coachActive ? "auto-btn toggle-active" : "auto-btn toggle-off";
@@ -210,9 +210,8 @@
 
             const afB = document.getElementById('auto-food-btn');
             if(!hasManagers) {
-                afB.disabled = (calories < managersPrice);
-                afB.innerHTML = `HIRE MGRS<br>Cost: 10k`;
-                afB.className = (!afB.disabled) ? 'auto-btn can-buy' : 'auto-btn';
+                afB.disabled = (calories < 10000);
+                afB.innerHTML = `HIRE MGRS<br><span>Cost: 10k</span>`;
             } else {
                 afB.innerHTML = managersActive ? "MGRS: ON" : "MGRS: OFF";
                 afB.className = managersActive ? "auto-btn toggle-active" : "auto-btn toggle-off";
@@ -220,39 +219,34 @@
 
             menu.forEach((item, i) => {
                 document.getElementById(`fill-${i}`).style.width = Math.max(0, (item.hp/item.max)*100) + "%";
-                document.getElementById(`hp-count-${i}`).innerText = Math.ceil(item.hp).toLocaleString() + " HP";
+                document.getElementById(`hp-text-${i}`).innerText = Math.ceil(item.hp).toLocaleString() + " HP";
                 document.getElementById(`reward-${i}`).innerText = "+" + Math.floor(item.r).toLocaleString();
                 document.getElementById(`cost-${i}`).innerText = item.cost.toLocaleString();
                 document.getElementById(`lvl-disp-${i}`).innerText = "L." + item.lvl;
-                const upBtn = document.getElementById(`up-btn-${i}`);
-                upBtn.disabled = (calories < item.cost);
-                if(!upBtn.disabled) upBtn.classList.add('can-buy');
-                else upBtn.classList.remove('can-buy');
+                document.getElementById(`up-btn-${i}`).disabled = (calories < item.cost);
             });
-            
-            // KEY CHANGE: Live update the stats menu if it's open
             if (statsOpen) updateStatsUI();
         }
 
         window.processEat = (index, isManual) => {
             let item = menu[index];
-            let dmg = isManual ? (globalPower * 2.5) : (globalPower * (1 + (playerLvl * 0.1)));
+            let baseDmg = isManual ? (globalPower * 2.5) : (globalPower * (1 + (playerLvl * 0.1)));
             
-            if(isManual) stats.manualTaps++;
-            else stats.autoBites++;
+            // Apply Sugar Rush Multiplier
+            let dmg = rushActive ? baseDmg * 5 : baseDmg;
 
+            if(isManual) stats.manualTaps++; else stats.autoBites++;
             item.hp -= dmg;
             if (item.hp <= 0) {
-                calories += item.r;
-                stats.lifetimeCals += item.r;
-                stats.dishCounts[index]++;
+                calories += item.r; stats.lifetimeCals += item.r; stats.dishCounts[index]++;
                 currentXP += item.xp;
-                if (currentXP >= nextXP) { 
-                    currentXP -= nextXP; 
-                    playerLvl++; 
-                    stats.levelUps++;
-                    nextXP = Math.floor(nextXP * 1.6); 
+                
+                // 5% Chance to trigger Sugar Rush upon finishing a dish
+                if (Math.random() < 0.05) {
+                    triggerSugarRush();
                 }
+
+                if (currentXP >= nextXP) { currentXP -= nextXP; playerLvl++; stats.levelUps++; nextXP = Math.floor(nextXP * 1.6); }
                 item.hp = item.max;
             }
             draw();
@@ -260,7 +254,7 @@
 
         window.buyGlobalJaw = (manual) => {
             if (calories >= gJawCost) { calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost = Math.floor(gJawCost * 1.7); draw(); }
-            else if(manual) showAlert();
+            else if(manual) document.getElementById('alert-popup').style.display = 'block'; setTimeout(() => document.getElementById('alert-popup').style.display = 'none', 1200);
         };
 
         window.upgradeDish = (index, manual) => {
@@ -270,49 +264,26 @@
                 if (item.lvl % 5 === 0) createEmojiBurst(item.i);
                 draw(); 
             }
-            else if(manual) showAlert();
         };
 
-        window.handleAutoJaw = () => {
-            if(!hasCoach && calories >= coachPrice) { calories -= coachPrice; hasCoach = true; coachActive = true; draw(); }
-            else if(hasCoach) { coachActive = !coachActive; draw(); }
-            else showAlert();
-        };
-
-        window.handleAutoFood = () => {
-            if(!hasManagers && calories >= managersPrice) { calories -= managersPrice; hasManagers = true; managersActive = true; draw(); }
-            else if(hasManagers) { managersActive = !managersActive; draw(); }
-            else showAlert();
-        };
-
-        window.buyGlobalSpeed = (manual) => { 
-            if (calories >= gSpeedCost && globalInterval > 100) { 
-                calories -= gSpeedCost; globalInterval -= 100; gSpeedCost = Math.floor(gSpeedCost * 3); clearInterval(loop); startLoop(); draw(); 
-            } else if (manual) showAlert(); 
-        };
+        window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { calories -= 5000; hasCoach = true; coachActive = true; draw(); } else if(hasCoach) { coachActive = !coachActive; draw(); } };
+        window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { calories -= 10000; hasManagers = true; managersActive = true; draw(); } else if(hasManagers) { managersActive = !managersActive; draw(); } };
+        
+        window.buyGlobalSpeed = (m) => { if (calories >= gSpeedCost && globalInterval > 100) { calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; clearInterval(loop); startLoop(); draw(); } };
 
         let loop;
-        function startLoop() {
-            loop = setInterval(() => {
-                menu.forEach((_, i) => processEat(i, false));
-                if(hasCoach && coachActive && calories >= gJawCost) buyGlobalJaw(false);
-                if(hasManagers && managersActive) menu.forEach((item, i) => { if(calories >= item.cost) upgradeDish(i, false); });
-            }, globalInterval);
-        }
+        function startLoop() { loop = setInterval(() => { menu.forEach((_, i) => processEat(i, false)); if(hasCoach && coachActive && calories >= gJawCost) buyGlobalJaw(false); if(hasManagers && managersActive) menu.forEach((_, i) => upgradeDish(i, false)); }, globalInterval); }
 
         const container = document.getElementById('food-container');
         menu.forEach((item, i) => {
-            const card = document.createElement('div');
-            card.className = 'food-card';
-            card.innerHTML = `<div class="food-header"><span>${item.i} ${item.n} <span id="lvl-disp-${i}">L.1</span></span><span class="hp-count" id="hp-count-${i}">0 HP</span></div>
-                <div class="hp-bar" onclick="processEat(${i}, true)"><div class="hp-fill" id="fill-${i}" style="background-color: ${item.c}"></div>
-                <div class="reward-overlay" id="reward-${i}">+0</div></div>
+            const card = document.createElement('div'); card.className = 'food-card';
+            card.innerHTML = `<div class="food-header"><span>${item.i} ${item.n} <span id="lvl-disp-${i}">L.1</span></span></div>
+                <div class="hp-bar" onclick="processEat(${i}, true)"><div class="hp-fill" id="fill-${i}" style="background: ${item.grad}"></div>
+                <div class="reward-overlay"><span class="reward-val" id="reward-${i}">+0</span><span class="hp-num" id="hp-text-${i}">0 HP</span></div></div>
                 <button id="up-btn-${i}" class="dish-up-btn" onclick="upgradeDish(${i}, true)">UP: <span id="cost-${i}">0</span></button>`;
             container.appendChild(card);
         });
-        
-        startLoop();
-        draw();
+        startLoop(); draw();
     });
 </script>
 </body>
