@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tact's Idle Feast: SUGAR RUSH</title>
+    <title>Tact's Idle Feast: Persistent</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { background-color: #1a1a1a; color: #eee; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 5px; overflow: hidden; transition: background-color 0.3s; }
         .game-container { background: #2d2d2d; padding: 12px; border-radius: 15px; width: 400px; text-align: center; border: 4px solid #444; display: flex; flex-direction: column; gap: 6px; position: relative; transition: 0.3s; }
         
-        /* SUGAR RUSH OVERLAY EFFECTS */
+        /* SUGAR RUSH EFFECTS */
         .sugar-rush-active { background-color: #2b002b !important; }
         .sugar-rush-active .game-container { border-color: #ff00ff !important; box-shadow: 0 0 20px #ff00ff; }
         #rush-timer { display: none; color: #ff00ff; font-weight: bold; font-size: 0.9rem; animation: blink 0.5s infinite; margin-bottom: 4px; }
+        .rush-power-text { color: #ff00ff !important; text-shadow: 0 0 10px #ff00ff; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         #alert-popup { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #ff0000; color: white; padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; border: 2px solid white; z-index: 1000; width: 80%; display: none; pointer-events: none; }
@@ -24,7 +25,6 @@
         .xp-header { display: flex; justify-content: space-between; font-size: 0.7rem; color: #00ffcc; font-weight: bold; }
         .xp-bar { width: 100%; height: 10px; background: #000; border-radius: 5px; margin-top: 4px; overflow: hidden; border: 1px solid #444; }
         #xp-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0066ff, #00ffcc); transition: width 0.3s; }
-
         .dashboard { background: #111; padding: 8px; border-radius: 10px; border: 1px solid #555; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; text-align: left; }
         .dash-item { font-size: 0.5rem; color: #888; }
         .dash-item b { display: block; color: #ffcc00; font-size: 0.75rem; }
@@ -33,30 +33,24 @@
         .auto-btn { padding: 4px; font-size: 0.55rem; background: #333; color: #00ff00; border: 1px solid #00ff00; border-radius: 4px; cursor: pointer; height: 50px; transition: 0.3s; line-height: 1.2; }
         .toggle-active { background: #00ff00 !important; color: #000 !important; font-weight: bold; }
         .toggle-off { background: #442222 !important; color: #ffaaaa !important; border-color: #ff5555 !important; }
-
         .global-upgrades { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .global-upgrades button { padding: 8px; font-size: 0.65rem; background: #222; border-radius: 6px; cursor: pointer; font-family: inherit; font-weight: bold; transition: 0.3s; }
         
-        @keyframes jawGlow { 0% { box-shadow: 0 0 2px #ffcc00; } 50% { box-shadow: 0 0 15px #ffcc00; } 100% { box-shadow: 0 0 2px #ffcc00; } }
-        @keyframes rbGlow { 0% { box-shadow: 0 0 2px #00bfff; } 50% { box-shadow: 0 0 15px #00bfff; } 100% { box-shadow: 0 0 2px #00bfff; } }
-        .can-buy-jaw { animation: jawGlow 1.5s infinite; border-color: #fff !important; }
-        .can-buy-rb { animation: rbGlow 1.5s infinite; border-color: #fff !important; }
-        button:disabled { opacity: 0.3 !important; animation: none !important; cursor: default !important; }
-
         .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .food-card { background: #333; padding: 6px; border-radius: 10px; border: 1px solid #444; }
+        .food-card { background: #333; padding: 6px; border-radius: 10px; border: 1px solid #444; position: relative; }
         .food-header { display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: bold; margin-bottom: 2px; align-items: center; color: #aaa; }
-        
         .hp-bar { width: 100%; height: 55px; background: #000; border-radius: 6px; cursor: pointer; border: 1px solid #555; overflow: hidden; position: relative; }
         .hp-fill { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 1; opacity: 0.85; transition: width 0.1s linear; }
         .reward-overlay { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; pointer-events: none; }
         .reward-val { font-size: 0.85rem; font-weight: bold; text-shadow: 2px 2px 3px #000; color: #fff; }
         .hp-num { font-size: 0.55rem; color: #fff; opacity: 0.9; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-
         .dish-up-btn { padding: 4px; font-size: 0.55rem; background: #222; color: #0f0; border: 1px solid #0f0; border-radius: 4px; width: 100%; margin-top: 4px; cursor: pointer; }
         .footer-btn { padding: 6px; background: #444; color: #fff; border: none; border-radius: 4px; font-size: 0.6rem; cursor: pointer; font-family: inherit; margin-top: 2px; }
-        .floating-emoji { position: fixed; bottom: -50px; font-size: 2rem; pointer-events: none; z-index: 9999; animation: floatUp 2.5s linear forwards; }
-        @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
+
+        .click-particle { position: fixed; font-size: 1.5rem; pointer-events: none; z-index: 10000; animation: particleFloat 1s ease-out forwards; }
+        @keyframes particleFloat { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -150px) scale(1.5) rotate(20deg); opacity: 0; } }
+        .floating-emoji { position: fixed; bottom: -50px; font-size: 2rem; pointer-events: none; z-index: 9999; animation: milestoneFloat 2.5s linear forwards; }
+        @keyframes milestoneFloat { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
     </style>
 </head>
 <body id="game-body">
@@ -76,6 +70,7 @@
         <h3 style="color:#ffcc00; font-size: 0.8rem; margin: 15px 0 5px 0;">DISHES FINISHED:</h3>
         <div class="stats-grid" id="dish-stats-container"></div>
         <button class="footer-btn" style="margin-top: auto; background: #ff4444;" onclick="toggleStats()">CLOSE MENU</button>
+        <button class="footer-btn" style="background: #333;" onclick="hardReset()">⚠️ HARD RESET SAVE</button>
     </div>
 
     <div class="xp-container">
@@ -112,8 +107,6 @@
         let hasCoach = false, coachActive = false, hasManagers = false, managersActive = false;
         let statsOpen = false;
         let stats = { lifetimeCals: 0, manualTaps: 0, autoBites: 0, levelUps: 0, dishCounts: [0, 0, 0, 0] };
-        
-        // SUGAR RUSH VARIABLES
         let rushActive = false, rushTimeLeft = 0;
 
         const menu = [
@@ -123,21 +116,69 @@
             { id: 3, n: "SEAFOOD", i: "🦀", hp: 6000, max: 6000, r: 4000, xp: 1500, grad: "linear-gradient(90deg, #ff0000, #ff4500)", lvl: 1, cost: 2000 }
         ];
 
+        // SAVE & LOAD LOGIC
+        function saveGame() {
+            const gameData = {
+                calories, globalPower, globalInterval, gJawCost, gSpeedCost,
+                playerLvl, currentXP, nextXP, hasCoach, coachActive, 
+                hasManagers, managersActive, stats,
+                menuLevels: menu.map(m => ({lvl: m.lvl, cost: m.cost, max: m.max, r: m.r}))
+            };
+            localStorage.setItem('tactFeastSave', JSON.stringify(gameData));
+        }
+
+        function loadGame() {
+            const savedData = localStorage.getItem('tactFeastSave');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                calories = data.calories; globalPower = data.globalPower;
+                globalInterval = data.globalInterval; gJawCost = data.gJawCost;
+                gSpeedCost = data.gSpeedCost; playerLvl = data.playerLvl;
+                currentXP = data.currentXP; nextXP = data.nextXP;
+                hasCoach = data.hasCoach; coachActive = data.coachActive;
+                hasManagers = data.hasManagers; managersActive = data.managersActive;
+                stats = data.stats;
+                data.menuLevels.forEach((m, i) => {
+                    menu[i].lvl = m.lvl; menu[i].cost = m.cost;
+                    menu[i].max = m.max; menu[i].r = m.r; menu[i].hp = m.max;
+                });
+                if (globalInterval < 1000) { clearInterval(loop); startLoop(); }
+            }
+        }
+
+        window.hardReset = () => {
+            if(confirm("Erase all progress forever?")) {
+                localStorage.removeItem('tactFeastSave');
+                location.reload();
+            }
+        }
+
+        // AUTO-SAVE every 10 seconds
+        setInterval(saveGame, 10000);
+
+        function spawnParticle(x, y, emoji) {
+            const p = document.createElement('div');
+            p.className = 'click-particle'; p.innerText = emoji;
+            p.style.left = x + 'px'; p.style.top = y + 'px';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 1000);
+        }
+
         function triggerSugarRush() {
-            if (rushActive) return; // Don't stack if already active
-            rushActive = true;
-            rushTimeLeft = 10;
+            if (rushActive) { rushTimeLeft = 10; return; } 
+            rushActive = true; rushTimeLeft = 10;
             document.getElementById('game-body').classList.add('sugar-rush-active');
             document.getElementById('rush-timer').style.display = 'block';
-            
+            document.getElementById('stat-power').classList.add('rush-power-text');
             let rushInterval = setInterval(() => {
                 rushTimeLeft--;
                 document.getElementById('rush-sec').innerText = rushTimeLeft;
                 if (rushTimeLeft <= 0) {
-                    clearInterval(rushInterval);
-                    rushActive = false;
+                    clearInterval(rushInterval); rushActive = false;
                     document.getElementById('game-body').classList.remove('sugar-rush-active');
                     document.getElementById('rush-timer').style.display = 'none';
+                    document.getElementById('stat-power').classList.remove('rush-power-text');
+                    draw();
                 }
             }, 1000);
         }
@@ -145,16 +186,7 @@
         window.toggleStats = () => {
             const modal = document.getElementById('stats-modal');
             statsOpen = !statsOpen; modal.style.display = statsOpen ? 'flex' : 'none';
-            if (statsOpen) {
-                const container = document.getElementById('dish-stats-container');
-                if (container.children.length === 0) {
-                    menu.forEach((item, i) => {
-                        const box = document.createElement('div');
-                        box.className = 'stat-box'; box.id = `dish-stat-${i}`; container.appendChild(box);
-                    });
-                }
-                updateStatsUI();
-            }
+            if (statsOpen) updateStatsUI();
         };
 
         function updateStatsUI() {
@@ -165,7 +197,7 @@
             document.getElementById('stat-level-ups').innerText = stats.levelUps.toLocaleString();
             menu.forEach((item, i) => {
                 const box = document.getElementById(`dish-stat-${i}`);
-                if (box) box.innerHTML = `${item.i} ${item.n}<b>${stats.dishCounts[i].toLocaleString()}</b>`;
+                if(box) box.innerHTML = `${item.i} ${item.n}<b>${stats.dishCounts[i].toLocaleString()}</b>`;
             });
         }
 
@@ -182,7 +214,8 @@
 
         function draw() {
             document.getElementById('total-calories').innerText = Math.floor(calories).toLocaleString();
-            document.getElementById('stat-power').innerText = (rushActive ? globalPower * 5 : globalPower).toLocaleString();
+            let displayPower = rushActive ? globalPower * 5 : globalPower;
+            document.getElementById('stat-power').innerText = displayPower.toLocaleString();
             document.getElementById('stat-speed').innerText = (globalInterval / 1000).toFixed(1) + "s";
             document.getElementById('stat-multi').innerText = "x" + (1 + (playerLvl * 0.1)).toFixed(1);
             document.getElementById('g-jaw-cost').innerText = gJawCost.toLocaleString();
@@ -193,29 +226,16 @@
             
             const jB = document.getElementById('jaw-btn');
             jB.disabled = (calories < gJawCost);
-            if(!jB.disabled) jB.classList.add('can-buy-jaw'); else jB.classList.remove('can-buy-jaw');
-
             const rB = document.getElementById('rb-btn');
             rB.disabled = (calories < gSpeedCost || globalInterval <= 100);
-            if(!rB.disabled && globalInterval > 100) rB.classList.add('can-buy-rb'); else rB.classList.remove('can-buy-rb');
 
             const ajB = document.getElementById('auto-jaw-btn');
-            if(!hasCoach) {
-                ajB.disabled = (calories < 5000);
-                ajB.innerHTML = `HIRE COACH<br><span>Cost: 5k</span>`;
-            } else {
-                ajB.innerHTML = coachActive ? "COACH: ON" : "COACH: OFF";
-                ajB.className = coachActive ? "auto-btn toggle-active" : "auto-btn toggle-off";
-            }
+            if(!hasCoach) { ajB.disabled = (calories < 5000); ajB.innerHTML = `HIRE COACH<br><span>Cost: 5k</span>`; ajB.className = "auto-btn";}
+            else { ajB.innerHTML = coachActive ? "COACH: ON" : "COACH: OFF"; ajB.className = coachActive ? "auto-btn toggle-active" : "auto-btn toggle-off"; }
 
             const afB = document.getElementById('auto-food-btn');
-            if(!hasManagers) {
-                afB.disabled = (calories < 10000);
-                afB.innerHTML = `HIRE MGRS<br><span>Cost: 10k</span>`;
-            } else {
-                afB.innerHTML = managersActive ? "MGRS: ON" : "MGRS: OFF";
-                afB.className = managersActive ? "auto-btn toggle-active" : "auto-btn toggle-off";
-            }
+            if(!hasManagers) { afB.disabled = (calories < 10000); afB.innerHTML = `HIRE MGRS<br><span>Cost: 10k</span>`; afB.className = "auto-btn";}
+            else { afB.innerHTML = managersActive ? "MGRS: ON" : "MGRS: OFF"; afB.className = managersActive ? "auto-btn toggle-active" : "auto-btn toggle-off"; }
 
             menu.forEach((item, i) => {
                 document.getElementById(`fill-${i}`).style.width = Math.max(0, (item.hp/item.max)*100) + "%";
@@ -228,24 +248,17 @@
             if (statsOpen) updateStatsUI();
         }
 
-        window.processEat = (index, isManual) => {
+        window.processEat = (index, isManual, event) => {
             let item = menu[index];
             let baseDmg = isManual ? (globalPower * 2.5) : (globalPower * (1 + (playerLvl * 0.1)));
-            
-            // Apply Sugar Rush Multiplier
             let dmg = rushActive ? baseDmg * 5 : baseDmg;
-
-            if(isManual) stats.manualTaps++; else stats.autoBites++;
+            if(isManual) { stats.manualTaps++; if(event) spawnParticle(event.clientX, event.clientY, item.i); }
+            else { stats.autoBites++; }
             item.hp -= dmg;
             if (item.hp <= 0) {
                 calories += item.r; stats.lifetimeCals += item.r; stats.dishCounts[index]++;
                 currentXP += item.xp;
-                
-                // 5% Chance to trigger Sugar Rush upon finishing a dish
-                if (Math.random() < 0.05) {
-                    triggerSugarRush();
-                }
-
+                if (Math.random() < 0.05) triggerSugarRush();
                 if (currentXP >= nextXP) { currentXP -= nextXP; playerLvl++; stats.levelUps++; nextXP = Math.floor(nextXP * 1.6); }
                 item.hp = item.max;
             }
@@ -253,8 +266,8 @@
         }
 
         window.buyGlobalJaw = (manual) => {
-            if (calories >= gJawCost) { calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost = Math.floor(gJawCost * 1.7); draw(); }
-            else if(manual) document.getElementById('alert-popup').style.display = 'block'; setTimeout(() => document.getElementById('alert-popup').style.display = 'none', 1200);
+            if (calories >= gJawCost) { calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost = Math.floor(gJawCost * 1.7); draw(); saveGame(); }
+            else if(manual) { document.getElementById('alert-popup').style.display = 'block'; setTimeout(() => document.getElementById('alert-popup').style.display = 'none', 1200); }
         };
 
         window.upgradeDish = (index, manual) => {
@@ -262,28 +275,30 @@
             if (calories >= item.cost) { 
                 calories -= item.cost; item.lvl++; item.r *= 1.45; item.max *= 1.25; item.hp = item.max; item.cost = Math.floor(item.cost * 1.85); 
                 if (item.lvl % 5 === 0) createEmojiBurst(item.i);
-                draw(); 
+                draw(); saveGame();
             }
         };
 
-        window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { calories -= 5000; hasCoach = true; coachActive = true; draw(); } else if(hasCoach) { coachActive = !coachActive; draw(); } };
-        window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { calories -= 10000; hasManagers = true; managersActive = true; draw(); } else if(hasManagers) { managersActive = !managersActive; draw(); } };
-        
-        window.buyGlobalSpeed = (m) => { if (calories >= gSpeedCost && globalInterval > 100) { calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; clearInterval(loop); startLoop(); draw(); } };
+        window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { calories -= 5000; hasCoach = true; coachActive = true; draw(); saveGame(); } else if(hasCoach) { coachActive = !coachActive; draw(); saveGame(); } };
+        window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { calories -= 10000; hasManagers = true; managersActive = true; draw(); saveGame(); } else if(hasManagers) { managersActive = !managersActive; draw(); saveGame(); } };
+        window.buyGlobalSpeed = (m) => { if (calories >= gSpeedCost && globalInterval > 100) { calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; clearInterval(loop); startLoop(); draw(); saveGame(); } };
 
         let loop;
-        function startLoop() { loop = setInterval(() => { menu.forEach((_, i) => processEat(i, false)); if(hasCoach && coachActive && calories >= gJawCost) buyGlobalJaw(false); if(hasManagers && managersActive) menu.forEach((_, i) => upgradeDish(i, false)); }, globalInterval); }
+        function startLoop() { loop = setInterval(() => { menu.forEach((_, i) => processEat(i, false)); if(hasCoach && coachActive && calories >= gJawCost) buyGlobalJaw(false); if(hasManagers && managersActive) menu.forEach((item, i) => { if(calories >= item.cost) upgradeDish(i, false); }); }, globalInterval); }
 
         const container = document.getElementById('food-container');
         menu.forEach((item, i) => {
             const card = document.createElement('div'); card.className = 'food-card';
             card.innerHTML = `<div class="food-header"><span>${item.i} ${item.n} <span id="lvl-disp-${i}">L.1</span></span></div>
-                <div class="hp-bar" onclick="processEat(${i}, true)"><div class="hp-fill" id="fill-${i}" style="background: ${item.grad}"></div>
+                <div class="hp-bar" onclick="processEat(${i}, true, event)"><div class="hp-fill" id="fill-${i}" style="background: ${item.grad}"></div>
                 <div class="reward-overlay"><span class="reward-val" id="reward-${i}">+0</span><span class="hp-num" id="hp-text-${i}">0 HP</span></div></div>
                 <button id="up-btn-${i}" class="dish-up-btn" onclick="upgradeDish(${i}, true)">UP: <span id="cost-${i}">0</span></button>`;
             container.appendChild(card);
         });
-        startLoop(); draw();
+        
+        loadGame(); // LOAD FIRST
+        startLoop(); 
+        draw();
     });
 </script>
 </body>
