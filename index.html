@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tact's Idle Feast: v5.1.2</title>
+    <title>Tact's Idle Feast: v5.1.3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
@@ -277,7 +277,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 8-BIT AUDIO SYNTHESIZER (v5.1.2) ---
+        // --- 8-BIT AUDIO SYNTHESIZER ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let audioEnabled = false;
 
@@ -311,7 +311,6 @@
             const now = audioCtx.currentTime;
 
             if (type === 'tap') {
-                // Soft retro "blip"
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
@@ -320,7 +319,6 @@
                 osc.start(now);
                 osc.stop(now + 0.05);
             } else if (type === 'buy') {
-                // Classic arcade "coin" (B5 to E6)
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(987.77, now);
                 osc.frequency.setValueAtTime(1318.51, now + 0.08);
@@ -329,7 +327,6 @@
                 osc.start(now);
                 osc.stop(now + 0.3);
             } else if (type === 'finish') {
-                // Happy completion chime (C5 -> E5 -> G5)
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(523.25, now);
                 osc.frequency.setValueAtTime(659.25, now + 0.1);
@@ -339,7 +336,6 @@
                 osc.start(now);
                 osc.stop(now + 0.4);
             } else if (type === 'error') {
-                // Soft retro "thud"
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
@@ -348,7 +344,6 @@
                 osc.start(now);
                 osc.stop(now + 0.15);
             } else if (type === 'rush') {
-                // Magical power-up cascade (C5, E5, G5, C6, E6, G6)
                 osc.type = 'square';
                 const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
                 notes.forEach((freq, i) => {
@@ -524,12 +519,14 @@
             }, 1000);
         }
 
+        // Upgrade Functions
         window.buyGlobalJaw = () => { if(calories >= gJawCost) { playSound('buy'); calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost *= 1.7; draw(); } else { playSound('error'); } };
         window.buyGlobalSpeed = () => { if(calories >= gSpeedCost && globalInterval > 100) { playSound('buy'); calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; startHeartbeat(); draw(); } else { playSound('error'); } };
         window.buyEnzymes = () => { if(calories >= gEnzymeCost) { playSound('buy'); calories -= gEnzymeCost; extraMulti += 0.5; gEnzymeCost *= 2.5; draw(); } else { playSound('error'); } };
         window.buyGlucose = () => { if(calories >= gGlucoseCost && extraRushChance < 0.5) { playSound('buy'); calories -= gGlucoseCost; extraRushChance += 0.01; gGlucoseCost *= 3; draw(); } else { playSound('error'); } };
         window.upgradeDish = (i) => { let item = menu[i]; if(calories >= item.cost) { playSound('buy'); calories -= item.cost; item.lvl++; item.r *= 1.5; item.max *= 1.3; item.hp = item.max; item.cost *= 2; draw(); } else { playSound('error'); } };
         
+        // Staff Toggles
         window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { playSound('buy'); calories -= 5000; hasCoach = true; coachActive = true; } else if(hasCoach) { playSound('tap'); coachActive = !coachActive; } else { playSound('error'); } draw(); };
         window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { playSound('buy'); calories -= 10000; hasManagers = true; managersActive = true; } else if(hasManagers) { playSound('tap'); managersActive = !managersActive; } else { playSound('error'); } draw(); };
         window.handleAutoDietician = () => { if(!hasDietician && calories >= 50000) { playSound('buy'); calories -= 50000; hasDietician = true; dieticianActive = true; } else if(hasDietician) { playSound('tap'); dieticianActive = !dieticianActive; } else { playSound('error'); } draw(); };
@@ -550,16 +547,48 @@
             }
         };
 
+        // --- NEW PURE RESET LOGIC (v5.1.3) ---
+        window.doPrestige = () => {
+            playSound('rush');
+            let newForks = goldenForks + 1;
+            let savedStats = stats; // Preserve lifetime logs
+            
+            // Scrub all variables
+            calories = 0; globalPower = 5; globalInterval = 1000; gJawCost = 50; gSpeedCost = 500;
+            gEnzymeCost = 5000; gGlucoseCost = 2500; extraMulti = 0; extraRushChance = 0.05;
+            playerLvl = 1; currentXP = 0; nextXP = 100; 
+            hasCoach = false; coachActive = false; hasManagers = false; managersActive = false; hasDietician = false; dieticianActive = false;
+            
+            // Scrub the menu array back to base
+            menu.forEach((m, i) => {
+                m.lvl = 1;
+                if(i===0){ m.max = 50; m.r = 25; m.cost = 20; }
+                if(i===1){ m.max = 250; m.r = 120; m.cost = 100; }
+                if(i===2){ m.max = 1500; m.r = 800; m.cost = 500; }
+                if(i===3){ m.max = 6000; m.r = 4000; m.cost = 2000; }
+                if(i===4){ m.max = 25000; m.r = 15000; m.cost = 10000; }
+                if(i===5){ m.max = 100000; m.r = 65000; m.cost = 50000; }
+                if(i===6){ m.max = 500000; m.r = 350000; m.cost = 250000; }
+                m.hp = m.max;
+            });
+
+            goldenForks = newForks;
+            stats = savedStats; 
+            
+            saveGame();
+            location.reload();
+        };
+
         window.openConfirm = (type) => { 
             playSound('tap');
             const m = document.getElementById('confirm-modal'); m.style.display = 'flex';
             document.getElementById('confirm-msg').innerText = type === 'reset' ? "WARNING: PURGE ALL LOCAL DATA?" : "INITIATE NEURAL ASCENSION PROTOCOL?";
             document.getElementById('confirm-yes').onclick = () => { 
-                playSound('rush');
-                if(type === 'reset') { localStorage.removeItem('tactFeastSave'); location.reload(); }
-                else { goldenForks++; calories = 0; globalPower = 10; playerLvl = 1; localStorage.removeItem('tactFeastSave'); saveGame(); location.reload(); }
+                if(type === 'reset') { playSound('rush'); localStorage.removeItem('tactFeastSave'); location.reload(); }
+                else { doPrestige(); }
             };
         };
+        
         window.closeConfirm = () => { playSound('tap'); document.getElementById('confirm-modal').style.display = 'none'; };
 
         function saveGame() {
