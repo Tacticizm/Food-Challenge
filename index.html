@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tact's Idle Feast: v5.0.1</title>
+    <title>Tact's Idle Feast: v5.1.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
@@ -72,11 +72,18 @@
         .stat-row b.highlight { color: var(--teal); }
 
         .menu-btn {
-            margin-top: auto; background: #1a1a1a; border: 1px dashed #555; 
+            background: #1a1a1a; border: 1px dashed #555; 
             padding: 12px; color: #888; text-align: center; cursor: pointer; 
             font-family: inherit; font-size: 11px; font-weight: bold; border-radius: 4px;
         }
         .menu-btn:hover { color: #fff; border-color: #fff; }
+        
+        .audio-btn {
+            margin-top: auto; margin-bottom: 5px; background: #0a0a0a; border: 1px solid #333; 
+            padding: 10px; color: #888; text-align: center; cursor: pointer; 
+            font-family: inherit; font-size: 11px; font-weight: bold; border-radius: 4px; transition: 0.2s;
+        }
+        .audio-btn.on { border-color: var(--teal); color: var(--teal); background: #001a1a; }
 
         /* =========================================
            CENTER COLUMN: THE KITCHEN
@@ -131,7 +138,6 @@
         .sys-btn span { font-size: 10px; color: #666; }
         .sys-icon { font-size: 18px; opacity: 0.8; }
 
-        /* Button Active States */
         .sys-btn.gold.active { border-left-color: var(--gold); }
         .sys-btn.gold.active b { color: var(--gold); }
         .sys-btn.blue.active { border-left-color: var(--blue); }
@@ -141,7 +147,6 @@
         .sys-btn.teal.active { border-left-color: var(--teal); }
         .sys-btn.teal.active b { color: var(--teal); }
         
-        /* Button Toggle States */
         .sys-btn.on { background: #002200; border-left-color: var(--green); border-color: var(--green); }
         .sys-btn.on b { color: var(--green); }
         .sys-btn.on span { color: #88ff88; }
@@ -197,8 +202,9 @@
             <div class="stat-row"><span>AUTO BITES</span><b id="stat-auto">0</b></div>
         </div>
 
-        <div id="prestige-injection-zone" style="margin-top: 15px; margin-bottom: 10px;"></div>
+        <div id="prestige-injection-zone" style="margin-top: 15px; margin-bottom: 5px;"></div>
 
+        <button id="audio-toggle-btn" class="audio-btn" onclick="toggleAudio()">[ AUDIO: MUTED ]</button>
         <button class="menu-btn" onclick="toggleStats()">[ MISSION LOGS & SETTINGS ]</button>
     </div>
 
@@ -271,6 +277,92 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- 8-BIT AUDIO SYNTHESIZER (v5.1.2) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioEnabled = false;
+
+        window.toggleAudio = () => {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('audio-toggle-btn');
+            if (audioEnabled) {
+                audioCtx.resume();
+                btn.innerText = "[ AUDIO: ON ]";
+                btn.className = "audio-btn on";
+                playSound('buy');
+            } else {
+                audioCtx.suspend();
+                btn.innerText = "[ AUDIO: MUTED ]";
+                btn.className = "audio-btn";
+            }
+        };
+
+        function initAudioOnFirstClick() {
+            if (audioCtx.state === 'suspended' && audioEnabled) audioCtx.resume();
+        }
+        document.body.addEventListener('click', initAudioOnFirstClick, {once:true});
+
+        function playSound(type) {
+            if (!audioEnabled || audioCtx.state === 'suspended') return;
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'tap') {
+                // Soft retro "blip"
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                gainNode.gain.setValueAtTime(0.05, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'buy') {
+                // Classic arcade "coin" (B5 to E6)
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                gainNode.gain.setValueAtTime(0.02, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'finish') {
+                // Happy completion chime (C5 -> E5 -> G5)
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gainNode.gain.setValueAtTime(0.02, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'error') {
+                // Soft retro "thud"
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+                gainNode.gain.setValueAtTime(0.08, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'rush') {
+                // Magical power-up cascade (C5, E5, G5, C6, E6, G6)
+                osc.type = 'square';
+                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+                notes.forEach((freq, i) => {
+                    osc.frequency.setValueAtTime(freq, now + (i * 0.08));
+                });
+                gainNode.gain.setValueAtTime(0.02, now);
+                gainNode.gain.setValueAtTime(0.02, now + (notes.length * 0.08));
+                gainNode.gain.linearRampToValueAtTime(0, now + (notes.length * 0.08) + 0.2);
+                osc.start(now);
+                osc.stop(now + (notes.length * 0.08) + 0.2);
+            }
+        }
+        // --------------------------------------
+
         // Base Variables
         let calories = 0, globalPower = 5, globalInterval = 1000, gJawCost = 50, gSpeedCost = 500;
         let playerLvl = 1, currentXP = 0, nextXP = 100, goldenForks = 0, statsOpen = false;
@@ -371,7 +463,7 @@
                 if (lbl) lbl.innerText = `L.${item.lvl}`;
             });
 
-            // Prestige Injection (Now in Left Column)
+            // Prestige Injection
             const pZone = document.getElementById('prestige-injection-zone');
             if(playerLvl >= 50 && !document.getElementById('inject-prestige')) {
                 const btn = document.createElement('button');
@@ -393,6 +485,7 @@
             
             if(isManual && event) {
                 stats.manualTaps++;
+                playSound('tap');
                 const p = document.createElement('div'); p.className='click-particle'; p.innerText=item.i;
                 p.style.left=event.clientX+'px'; p.style.top=event.clientY+'px'; 
                 document.body.appendChild(p); setTimeout(()=>p.remove(),600);
@@ -402,6 +495,7 @@
             
             item.hp -= dmg;
             if(item.hp <= 0) {
+                playSound('finish');
                 let payout = item.r * Math.pow(2, goldenForks);
                 calories += payout; stats.lifetimeCals += payout; stats.dishCounts[index]++;
                 currentXP += item.xp;
@@ -414,6 +508,7 @@
         }
 
         function triggerSugarRush() {
+            playSound('rush');
             rushActive = true; let t = 10; document.body.classList.add('sugar-rush-active');
             let itv = setInterval(() => {
                 t--; document.getElementById('status-ticker').innerText = `>> ALERT: SUGAR RUSH PROTOCOL ENGAGED // ${t}s REMAINING <<`;
@@ -429,17 +524,18 @@
             }, 1000);
         }
 
-        window.buyGlobalJaw = () => { if(calories >= gJawCost) { calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost *= 1.7; draw(); } };
-        window.buyGlobalSpeed = () => { if(calories >= gSpeedCost && globalInterval > 100) { calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; startHeartbeat(); draw(); } };
-        window.buyEnzymes = () => { if(calories >= gEnzymeCost) { calories -= gEnzymeCost; extraMulti += 0.5; gEnzymeCost *= 2.5; draw(); } };
-        window.buyGlucose = () => { if(calories >= gGlucoseCost && extraRushChance < 0.5) { calories -= gGlucoseCost; extraRushChance += 0.01; gGlucoseCost *= 3; draw(); } };
-        window.upgradeDish = (i) => { let item = menu[i]; if(calories >= item.cost) { calories -= item.cost; item.lvl++; item.r *= 1.5; item.max *= 1.3; item.hp = item.max; item.cost *= 2; draw(); } };
+        window.buyGlobalJaw = () => { if(calories >= gJawCost) { playSound('buy'); calories -= gJawCost; globalPower += (globalPower >= 100 ? 10 : 5); gJawCost *= 1.7; draw(); } else { playSound('error'); } };
+        window.buyGlobalSpeed = () => { if(calories >= gSpeedCost && globalInterval > 100) { playSound('buy'); calories -= gSpeedCost; globalInterval -= 100; gSpeedCost *= 3; startHeartbeat(); draw(); } else { playSound('error'); } };
+        window.buyEnzymes = () => { if(calories >= gEnzymeCost) { playSound('buy'); calories -= gEnzymeCost; extraMulti += 0.5; gEnzymeCost *= 2.5; draw(); } else { playSound('error'); } };
+        window.buyGlucose = () => { if(calories >= gGlucoseCost && extraRushChance < 0.5) { playSound('buy'); calories -= gGlucoseCost; extraRushChance += 0.01; gGlucoseCost *= 3; draw(); } else { playSound('error'); } };
+        window.upgradeDish = (i) => { let item = menu[i]; if(calories >= item.cost) { playSound('buy'); calories -= item.cost; item.lvl++; item.r *= 1.5; item.max *= 1.3; item.hp = item.max; item.cost *= 2; draw(); } else { playSound('error'); } };
         
-        window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { calories -= 5000; hasCoach = true; coachActive = true; } else if(hasCoach) coachActive = !coachActive; draw(); };
-        window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { calories -= 10000; hasManagers = true; managersActive = true; } else if(hasManagers) managersActive = !managersActive; draw(); };
-        window.handleAutoDietician = () => { if(!hasDietician && calories >= 50000) { calories -= 50000; hasDietician = true; dieticianActive = true; } else if(hasDietician) dieticianActive = !dieticianActive; draw(); };
+        window.handleAutoJaw = () => { if(!hasCoach && calories >= 5000) { playSound('buy'); calories -= 5000; hasCoach = true; coachActive = true; } else if(hasCoach) { playSound('tap'); coachActive = !coachActive; } else { playSound('error'); } draw(); };
+        window.handleAutoFood = () => { if(!hasManagers && calories >= 10000) { playSound('buy'); calories -= 10000; hasManagers = true; managersActive = true; } else if(hasManagers) { playSound('tap'); managersActive = !managersActive; } else { playSound('error'); } draw(); };
+        window.handleAutoDietician = () => { if(!hasDietician && calories >= 50000) { playSound('buy'); calories -= 50000; hasDietician = true; dieticianActive = true; } else if(hasDietician) { playSound('tap'); dieticianActive = !dieticianActive; } else { playSound('error'); } draw(); };
         
         window.toggleStats = () => { 
+            playSound('tap');
             statsOpen = !statsOpen; document.getElementById('stats-modal').style.display = statsOpen ? 'flex' : 'none'; 
             if(statsOpen) {
                 let dHTML = "";
@@ -455,14 +551,16 @@
         };
 
         window.openConfirm = (type) => { 
+            playSound('tap');
             const m = document.getElementById('confirm-modal'); m.style.display = 'flex';
             document.getElementById('confirm-msg').innerText = type === 'reset' ? "WARNING: PURGE ALL LOCAL DATA?" : "INITIATE NEURAL ASCENSION PROTOCOL?";
             document.getElementById('confirm-yes').onclick = () => { 
+                playSound('rush');
                 if(type === 'reset') { localStorage.removeItem('tactFeastSave'); location.reload(); }
                 else { goldenForks++; calories = 0; globalPower = 10; playerLvl = 1; localStorage.removeItem('tactFeastSave'); saveGame(); location.reload(); }
             };
         };
-        window.closeConfirm = () => document.getElementById('confirm-modal').style.display = 'none';
+        window.closeConfirm = () => { playSound('tap'); document.getElementById('confirm-modal').style.display = 'none'; };
 
         function saveGame() {
             const data = { calories, globalPower, globalInterval, gJawCost, gSpeedCost, gEnzymeCost, gGlucoseCost, extraMulti, extraRushChance, playerLvl, currentXP, nextXP, goldenForks, hasCoach, coachActive, hasManagers, managersActive, hasDietician, dieticianActive, stats, menu: menu.map(m=>({lvl:m.lvl, cost:m.cost, max:m.max, r:m.r})) };
